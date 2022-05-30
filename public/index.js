@@ -19,18 +19,6 @@ let renderProducts = (productsData) => {
     }
 }
 
-function createProd(form) {
-    console.log("Nuevo producto agregado!");
-    let newProduct = {
-        title: document.getElementById('title').value,
-        price: parseFloat(document.getElementById('price').value),
-        thumbnail: document.getElementById('thumbnail').value
-    }
-    socket.emit('newProduct', newProduct)
-    console.log(newProuct);
-    return false;
-}
-
 socket.on('messages', (messagesData) => renderMessages(messagesData));
 
 let renderMessages = (messagesData) => {

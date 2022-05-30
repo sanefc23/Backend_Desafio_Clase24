@@ -1,20 +1,25 @@
 const express = require("express");
+const session = require('express-session');
+const cookieParser = require('cookie-parser');
 const {
     engine
 } = require("express-handlebars");
 const routerAPI = express.Router();
 const PATH = require('path')
-
 const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
 const PORT = process.env.PORT || 8080;
 const denv = require('dotenv');
 const dotenv = denv.config();
+const productRouter = require("./routers/productRouter");
+const userRouter = require("./routers/userRouter");
 const mongoose = require("mongoose");
-const productsInsert = require("./scripts/productsInsert");
-const productsCreateTable = require("./scripts/productsCreateTable");
+const MongoStore = require("connect-mongo")
+
+// --- MongoDB Models ---
 const Message = require("./db/Message");
+const Product = require("./db/Product");
 const {
     faker
 } = require('@faker-js/faker');
@@ -40,13 +45,34 @@ app.use(express.urlencoded({
     extended: true
 }));
 app.use(express.static("./public"));
-app.use("/api", routerAPI);
+app.use(cookieParser());
+
+// --- Session ---
+const sessionOptions = {
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_ATLAS_URL
+    }),
+    secret: 's3cr3t0',
+    resave: true,
+    saveUninitialized: true,
+    cookie: {
+        expires: 60 * 1000
+    }
+}
+
+app.use(session(sessionOptions));
+
+// Routers
+app.use("/", routerAPI);
+app.use("/productos", productRouter);
+app.use("/user", userRouter);
+
+app.get('/', (req, res) => {
+    res.redirect('/productos')
+});
+
 server.listen(PORT, () => {
     console.log(`Listening on port ${PORT}...`);
-    // console.log("Creando tabla Products...");
-    // productsCreateTable();
-    // console.log("Inserting Products");
-    // productsInsert();
 });
 server.on("error", (error) => console.log("Server Error\n\t", error));
 
@@ -76,61 +102,6 @@ function connect() {
         .then(() => console.log('Conectado a la base de datos...'))
         .catch(error => console.log('Error al conectarse a la base de datos', error));
 }
-
-//ProductsDB
-const prodsOptions = require('./options/mariaDB');
-const prodsKnex = require('knex')(prodsOptions);
-
-// Ruta base para uso de HANDLEBARS
-app.get('/', (req, res) => {
-    prodsKnex.select('*').from('products')
-        .then(products => {
-            res.render('index', {
-                ok: true,
-                error: null,
-                isTestView: false,
-                products: products
-            })
-        })
-        .catch(e => {
-            console.log('Error getting messages: ', e);
-        })
-});
-
-//Función generadora de productos.
-faker.locale = 'es'
-
-function genProducts(cant) {
-    const generatedProducts = [];
-    let r = 0;
-
-    for (let i = 0; i < cant; i++) {
-        generatedProducts.push({
-            id: faker.datatype.uuid(),
-            title: faker.commerce.product(),
-            thumbnail: `${faker.image.technics()}?random=${r++}`,
-            price: faker.commerce.price(),
-        })
-    }
-
-    return generatedProducts;
-}
-
-// Ruta para Faker
-app.get('/productos/test/:cant?', (req, res) => {
-
-    let fakeProds
-    if (req.params.cant != undefined) {
-        fakeProds = genProducts(req.params.cant);
-    } else {
-        fakeProds = genProducts(5);
-    }
-
-    return res.render('index', {
-        isTestView: true,
-        fakeProds: fakeProds
-    });
-});
 
 io.on('connection', (socket) => {
     console.log('Someone is connected');
@@ -171,7 +142,9 @@ io.on('connection', (socket) => {
 
     //funcion para leer todos los productos de la db y mostrarlos.
     function selectAllProducts() {
-        prodsKnex.select('*').from('products')
+        Product.find().sort({
+                '_id': 1
+            })
             .then(products => {
                 socket.emit('productCatalog', {
                     products: products,
@@ -180,7 +153,6 @@ io.on('connection', (socket) => {
             })
             .catch(e => {
                 console.log('Error getting products: ', e);
-                prodsKnex.destroy();
             });
     }
 
@@ -188,21 +160,9 @@ io.on('connection', (socket) => {
     selectAllMessages();
     selectAllProducts();
 
-    socket.on('newProduct', newProd => {
-        prodsKnex('products').insert(newProd)
-            .then(() => {
-                console.log('producto insertado');
-                selectAllProducts()
-                return false;
-            })
-            .catch(e => {
-                console.log('Error en Insert producto: ', e);
-            })
-    });
-
     //Inserto un nuevo mensaje en la base de datos de mensajes.
     socket.on('newMsg', newMsg => {
-        Message.create(newMsg)
+        Product.create(newMsg)
             .then(() => {
                 console.log('Mensaje insertado');
                 selectAllMessages();

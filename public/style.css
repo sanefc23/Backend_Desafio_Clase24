@@ -29,11 +29,15 @@
     border-radius: 20px;
 }
 .product{
-margin: 1em 5em;
+margin: 1em;
    padding: 0.5em;
    background-color: rgba(255, 255, 255, 0.3);
    border-radius: 20px;
    flex-direction: row;
    justify-content: center;
    align-items: center;
+}
+
+.col-form{
+    flex-direction: column;
 }
