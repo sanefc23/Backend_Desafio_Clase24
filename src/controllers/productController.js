@@ -26,7 +26,7 @@ function genProducts(cant) {
 const productController = {
     listProducts: (req, res) => {
         console.log('Productos: ', req.session);
-        const userName = req.session != undefined ? req.session.userName : null;
+        const userName = req.session.passport ? req.session.passport.user : null;
         Product.find().sort({
                 '_id': 1
             })

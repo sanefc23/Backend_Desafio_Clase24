@@ -16,6 +16,7 @@ const productRouter = require("./routers/productRouter");
 const userRouter = require("./routers/userRouter");
 const mongoose = require("mongoose");
 const MongoStore = require("connect-mongo")
+const passport = require('passport');
 
 // --- MongoDB Models ---
 const Message = require("./db/Message");
@@ -61,6 +62,13 @@ const sessionOptions = {
 }
 
 app.use(session(sessionOptions));
+
+// --- PASSPORT ---
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(function (err, req, res, next) {
+    console.log(err);
+});
 
 // Routers
 app.use("/", routerAPI);

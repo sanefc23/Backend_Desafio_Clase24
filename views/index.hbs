@@ -8,6 +8,18 @@
 
 {{> testView}}
 
+{{else if failedLogin}}
+
+{{> failedLogin}}
+
+{{else if failedRegister}}
+
+{{> failedRegister}}
+
+{{else if registerView}}
+
+{{> registerView}}
+
 {{else}}
 
 {{> userSession}}
