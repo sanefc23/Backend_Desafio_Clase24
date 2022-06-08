@@ -17,6 +17,7 @@ const userRouter = require("./routers/userRouter");
 const mongoose = require("mongoose");
 const MongoStore = require("connect-mongo")
 const passport = require('passport');
+const flash = require('connect-flash');
 
 // --- MongoDB Models ---
 const Message = require("./db/Message");
@@ -47,6 +48,7 @@ app.use(express.urlencoded({
 }));
 app.use(express.static("./public"));
 app.use(cookieParser());
+app.use(flash());
 
 // --- Session ---
 const sessionOptions = {
