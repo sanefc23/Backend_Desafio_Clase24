@@ -9,7 +9,7 @@ const PATH = require('path')
 const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
-const PORT = process.env.PORT || 8080;
+const PORT = process.argv[2] || 8080;
 const denv = require('dotenv');
 const dotenv = denv.config();
 const productRouter = require("./routers/productRouter");
@@ -18,6 +18,10 @@ const mongoose = require("mongoose");
 const MongoStore = require("connect-mongo")
 const passport = require('passport');
 const flash = require('connect-flash');
+const {
+    fork
+} = require("child_process");
+const numCPUs = require('os').cpus().length;
 
 // --- MongoDB Models ---
 const Message = require("./db/Message");
@@ -25,6 +29,8 @@ const Product = require("./db/Product");
 const {
     faker
 } = require('@faker-js/faker');
+
+console.log(process.argv);
 
 // --- Normalizr ---
 const normalizr = require('normalizr');
@@ -80,6 +86,27 @@ app.use("/user", userRouter);
 app.get('/', (req, res) => {
     res.redirect('/productos')
 });
+
+app.get('/info', (req, res) => {
+    res.json({
+        argsEntrada: process.argv,
+        sistOperativo: process.platform,
+        nodeVersion: process.version,
+        reservedMemory: process.memoryUsage().rss,
+        executionPath: process.cwd(),
+        processId: process.pid,
+        cores: numCPUs,
+        //carpetacorriente??
+    })
+})
+
+app.get('/randoms/:num?', (req, res) => {
+    const cantidad = parseInt(req.params.num) || 100000000;
+    const computo = fork("./computo.js");
+    computo.send(cantidad);
+    computo.on("message", (sum) => res.send(sum));
+    console.log("No bloqueante.");
+})
 
 server.listen(PORT, () => {
     console.log(`Listening on port ${PORT}...`);
