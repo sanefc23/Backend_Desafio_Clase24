@@ -9,7 +9,7 @@ const PATH = require('path')
 const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
-const PORT = process.argv[2] || 8080;
+
 const denv = require('dotenv');
 const dotenv = denv.config();
 const productRouter = require("./routers/productRouter");
@@ -18,10 +18,14 @@ const mongoose = require("mongoose");
 const MongoStore = require("connect-mongo")
 const passport = require('passport');
 const flash = require('connect-flash');
+const args = require('minimist')(process.argv);
+const PORT = args.port || 8080;
 const {
     fork
 } = require("child_process");
 const numCPUs = require('os').cpus().length;
+
+console.log(args);
 
 // --- MongoDB Models ---
 const Message = require("./db/Message");
@@ -29,8 +33,6 @@ const Product = require("./db/Product");
 const {
     faker
 } = require('@faker-js/faker');
-
-console.log(process.argv);
 
 // --- Normalizr ---
 const normalizr = require('normalizr');
